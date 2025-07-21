@@ -1,0 +1,1 @@
+import{aB as a,a as o,h as r,J as n,j as l}from"./index-DTDkP3dS.js";const c=()=>{const{allowedRoutes:s}=a(),t=o(),{data:e}=r();return n.useEffect(()=>{t(s[0])},[e==null?void 0:e.role]),l.jsx("div",{className:"w-full h-screen flex justify-center items-center text-4xl font-bold",children:"Unauthorized"})};export{c as default};

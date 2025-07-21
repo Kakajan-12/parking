@@ -1,0 +1,1 @@
+import{at as n}from"./index-DTDkP3dS.js";const P=()=>{const[c,t]=n();return{getQuery:e=>c.get(e)??void 0,setQuery:(e,s)=>{t(r=>{const a=new URLSearchParams(r);return e.forEach(u=>{a.set(u.key,`${u.value}`)}),a},s)},deleteQuery:e=>{t(s=>{const r=new URLSearchParams(s);return e.forEach(a=>r.delete(a)),r},{replace:!0})},deleteAllQuery:()=>{t({})}}};export{P as u};
