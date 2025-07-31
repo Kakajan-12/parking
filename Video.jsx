@@ -39,7 +39,28 @@ const Video = () => {
   const intl = useIntl();
   const queryClient = useQueryClient();
   const limit = 10;
+
+  async function checkSubscription(plate) {
+    const API_URL = import.meta.env.VITE_API_URL || "http://172.16.4.204:3000";
+    try {
+      const res = await fetch(`${API_URL}/api/v1/accountant/search_car?plate=${plate}`);
+      const result = await res.json();
+
+      if (result.data && result.data.length > 0) {
+        // сортируем по end_time, берём самую последнюю
+        const latest = result.data.sort((a, b) => new Date(b.end_time) - new Date(a.end_time))[0];
   
+        const now = new Date();
+        const subEnd = new Date(latest.end_time);
+        return now < subEnd; // true только если подписка активна
+      }
+      return false;
+    } catch (err) {
+      console.error("Ошибка проверки подписки:", err);
+      return false;
+    }
+  }
+
 
   useEffect(() => {
     console.log("🔥 Cars updated:", cars);
@@ -521,7 +542,7 @@ const Video = () => {
   };
 
 
-  const openModal = (log) => {
+  const openModal = async (log) => {
     console.log("Opening modal for car:", log);
     if (!log?.number || !log?.parking) {
       console.error("Invalid log data:", log);
@@ -532,15 +553,11 @@ const Video = () => {
     const channelId = log.ChannelId || defaultChannelIds[log.parking] || "";
     if (!channelId) {
       console.warn("No valid ChannelId for car:", log.number);
-      toast.warn(intl.formatMessage({ id: "video.warning.noChannelId", defaultMessage: "No channel ID available. Some actions may be limited." }));
-      setSelectedLog({
-        ...log,
-        price: getPriceDisplay(log.total_payment, log.status),
-        total_payment: log.total_payment,
-        ChannelId: "",
-      });
+      const hasSubscription = await checkSubscription(log.number);
+      const displayPrice = hasSubscription ? "Подписка" : log.price;
+
+      setSelectedLog({ ...log, price: displayPrice });
       setModalOpen(true);
-      setReason("");
       return;
     }
 
@@ -744,7 +761,7 @@ const Video = () => {
         reconnectAttempts = 0;
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = async (event) => {
         try {
           const data = JSON.parse(event.data);
           console.log("📨 WebSocket data:", data);
@@ -759,13 +776,17 @@ const Video = () => {
           if (data.id === lastEventIdRef.current) return;
           lastEventIdRef.current = data.id;
 
+          const hasSubscription = await checkSubscription(data.car_number);
+          const displayPrice = hasSubscription ? "Подписка" : `${data.total_payment} TMT`;
+
           // Формируем данные для модалки
           const logData = {
             id: data.id,
             number: data.car_number,
             entryTime: data.start_time,
             departureTime: data.end_time,
-            price: `${data.total_payment} TMT`,
+            // price: `${data.total_payment} TMT`,
+            price: displayPrice,
             image_url: data.image_url || "/photo.jpg",
             ChannelId: data.ChannelId || null,
           };
